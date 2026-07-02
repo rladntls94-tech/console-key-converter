@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BDC 콘솔 키 변환기</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+    background: #0f0f0f; color: #e8e8e8;
+    min-height: 100vh; padding: 40px 24px;
+  }
+  .header { margin-bottom: 20px; }
+  .header h1 { font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+  .header p { font-size: 13px; color: #888; }
+  .badge {
+    display: inline-block; font-size: 11px; padding: 2px 10px;
+    border-radius: 20px; background: #1e3a5f; color: #7ab8f5;
+    margin-left: 8px; vertical-align: middle; font-weight: 500;
+  }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 14px 0 18px; font-size: 12px; color: #aaa; }
+  .legend .chip { padding: 2px 10px; border-radius: 5px; font-weight: 500; }
+  .chip.mapped   { background: #1d3325; color: #6dbf7e; }
+  .chip.ui       { background: #16283f; color: #7ab8f5; }
+  .chip.unmapped { background: #3a2a12; color: #e0a95c; }
+  .chip.pad      { background: #262626; color: #999; }
+
+  .panels { display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; margin-bottom: 16px; }
+  .panel-label { font-size: 11px; color: #666; margin-bottom: 8px; letter-spacing: 0.08em; text-transform: uppercase; }
+  textarea {
+    width: 100%; height: 520px; resize: vertical;
+    font-family: 'Consolas', 'D2Coding', monospace; font-size: 13px;
+    padding: 14px; border: 0.5px solid #2a2a2a; border-radius: 10px;
+    background: #161616; color: #e8e8e8; line-height: 1.7;
+  }
+  textarea:focus { outline: none; border-color: #444; }
+
+  .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+  button {
+    padding: 9px 20px; font-size: 13px; font-weight: 500;
+    border-radius: 8px; cursor: pointer; border: 0.5px solid #333;
+    background: #1a1a1a; color: #e8e8e8;
+  }
+  button:hover { background: #252525; }
+  .btn-primary { background: #e8e8e8; color: #111; border-color: transparent; }
+  .btn-primary:hover { background: #fff; }
+  .copy-msg { font-size: 12px; color: #6dbf7e; opacity: 0; transition: opacity 0.3s; }
+  .copy-msg.show { opacity: 1; }
+  label.opt { font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+
+  .stats {
+    font-size: 12px; color: #aaa; background: #161616;
+    border: 0.5px solid #2a2a2a; border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 14px; display: none; line-height: 1.8;
+  }
+  .stats.show { display: block; }
+  .stats b { color: #fff; }
+
+  #results { display: flex; flex-direction: column; gap: 10px; max-height: 620px; overflow-y: auto; padding-right: 4px; }
+  .line-card {
+    background: #161616; border: 0.5px solid #2a2a2a;
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .line-no { font-size: 11px; color: #555; margin-bottom: 5px; }
+  .line-text { font-size: 13px; line-height: 1.8; color: #ddd; word-break: break-all; }
+  mark { border-radius: 4px; padding: 1px 4px; font-weight: 600; }
+  mark.mapped   { background: #1d3325; color: #6dbf7e; }
+  mark.ui       { background: #16283f; color: #7ab8f5; }
+  mark.unmapped { background: #3a2a12; color: #e0a95c; }
+  .sugs { list-style: none; margin-top: 9px; border-top: 0.5px dashed #2a2a2a; padding-top: 9px;
+          display: flex; flex-direction: column; gap: 4px; }
+  .sug { font-size: 12.5px; line-height: 1.7; }
+  .sug .tag { display: inline-block; width: 62px; font-size: 11px; font-weight: 600; }
+  .sug.mapped .tag   { color: #6dbf7e; }
+  .sug.ui .tag       { color: #7ab8f5; }
+  .sug.unmapped .tag { color: #e0a95c; }
+  .sug .pc { color: #ccc; font-weight: 600; }
+  .sug .ps { color: #7ab8f5; font-weight: 700; }
+  .sug .xb { color: #6dbf7e; font-weight: 700; }
+  .sug .dim { color: #777; }
+  .pad-badge { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 4px;
+               background: #262626; color: #999; margin-right: 6px; }
+  .empty { font-size: 13px; color: #666; padding: 30px 0; text-align: center; }
+
+  details.mapref { margin-top: 26px; font-size: 12.5px; color: #aaa; }
+  details.mapref summary { cursor: pointer; color: #888; font-size: 12px; }
+  details.mapref table { border-collapse: collapse; margin-top: 10px; }
+  details.mapref th, details.mapref td { border: 0.5px solid #2a2a2a; padding: 5px 14px; text-align: center; }
+  details.mapref th { color: #666; font-weight: 500; background: #161616; }
+
+  @media (max-width: 1000px) { .panels { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>콘솔 키 변환기 <span class="badge">검은사막 콘솔 (PC키 → PS/XB)</span></h1>
+  <p>한국어 원문을 넣으면 PC 조작키를 찾아 콘솔 키가 무엇인지 알려주고 표시합니다.</p>
+  <div class="legend">
+    <span class="chip mapped">변환 대상 — 콘솔 버튼 제안</span>
+    <span class="chip ui">UI 단축키 — 괄호 키 제거</span>
+    <span class="chip unmapped">미매핑 — 확인 필요</span>
+    <span class="chip pad">[패드 모드] — 표기 삭제</span>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn-primary" onclick="analyze()">키 분석하기</button>
+  <button onclick="loadSample()">샘플 넣기</button>
+  <button onclick="clearAll()">지우기</button>
+  <button onclick="copyReport()">결과 복사</button>
+  <span class="copy-msg" id="copyMsg">복사되었습니다!</span>
+  <label class="opt"><input type="checkbox" id="onlyHits" checked onchange="render()"> 키 관련 문장만 보기</label>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div class="panels">
+  <div>
+    <div class="panel-label">입력 — 패치노트 원문 (한국어)</div>
+    <textarea id="input" placeholder="패치노트 텍스트를 붙여넣으세요. (엑셀 B열 복사 가능)"></textarea>
+  </div>
+  <div>
+    <div class="panel-label">분석 결과</div>
+    <div id="results"><div class="empty">왼쪽에 텍스트를 붙여넣고 [키 분석하기]를 누르세요.</div></div>
+  </div>
+</div>
+
+<details class="mapref">
+  <summary>기본 적인 키 매핑 참고표 펼치기</summary>
+  <table>
+    <tr><th>PC</th><th>PS</th><th>XB</th><th>PC</th><th>PS</th><th>XB</th></tr>
+    <tr><td>Shift</td><td>L2</td><td>LT</td><td>F</td><td>○</td><td>B</td></tr>
+    <tr><td>좌클릭(LMB)</td><td>R1</td><td>RB</td><td>E</td><td>□</td><td>X</td></tr>
+    <tr><td>우클릭(RMB)</td><td>R2</td><td>RT</td><td>Q</td><td>L1</td><td>LB</td></tr>
+    <tr><td>W / A / S / D</td><td colspan="2">LS↑ / LS← / LS↓ / LS→</td><td>C</td><td>△</td><td>Y</td></tr>
+    <tr><td>Space</td><td>X</td><td>A</td><td>퀵슬롯</td><td>RING</td><td>MENU</td></tr>
+    <tr><td>유지(HOLD)</td><td>유지</td><td>유지</td><td>CTRL+F</td><td colspan="2">아이템 찾기</td></tr>
+  </table>
+</details>
+
+<script>
+// ── 원자 키 매핑 (콘솔 키 정리.xlsx) ──────────────────────────────
+const ATOMS = {
+  SHIFT:     { ps: 'L2',   xb: 'LT',   label: 'Shift' },
+  LMB:       { ps: 'R1',   xb: 'RB',   label: '좌클릭' },
+  RMB:       { ps: 'R2',   xb: 'RT',   label: '우클릭' },
+  W:         { ps: 'LS↑',  xb: 'LS↑',  label: 'W' },
+  A:         { ps: 'LS←',  xb: 'LS←',  label: 'A' },
+  S:         { ps: 'LS↓',  xb: 'LS↓',  label: 'S' },
+  D:         { ps: 'LS→',  xb: 'LS→',  label: 'D' },
+  F:         { ps: '○',    xb: 'B',    label: 'F' },
+  E:         { ps: '□',    xb: 'X',    label: 'E' },
+  Q:         { ps: 'L1',   xb: 'LB',   label: 'Q' },
+  C:         { ps: '△',    xb: 'Y',    label: 'C' },
+  SPACE:     { ps: 'X',    xb: 'A',    label: 'Space' },
+  QUICKSLOT: { ps: 'RING', xb: 'MENU', label: '퀵슬롯' },
+};
+// 매핑표에 없는 것으로 확인된 키 (미매핑 경고 대상)
+const KNOWN_UNMAPPED = /^(CTRL|ALT|TAB|ESC|ENTER|F(?:1[0-2]|[1-9]))$/;
+// 특수 조합: 콘솔에서는 버튼이 아닌 기능명으로 치환
+const SPECIAL_COMBOS = { 'CTRL+F': '아이템 찾기' };
+
+function normAtom(raw) {
+  const u = raw.toUpperCase().replace(/\s+/g, '');
+  if (/^(SHIFT|시프트|쉬프트)$/.test(u)) return 'SHIFT';
+  if (u === '좌클릭' || u === 'LMB') return 'LMB';
+  if (u === '우클릭' || u === 'RMB') return 'RMB';
+  if (/^(스페이스바?|SPACE)$/.test(u)) return 'SPACE';
+  if (/^퀵슬롯$/.test(u)) return 'QUICKSLOT';
+  if (u === '컨트롤') return 'CTRL';
+  if (u === '탭') return 'TAB';
+  if (u === '엔터') return 'ENTER';
+  return u;
+}
+function atomLabel(a) { return ATOMS[a] ? ATOMS[a].label : a; }
+
+// ── 감지 정규식 ──────────────────────────────────────────────────
+const ATOM_SRC = '(?:[Ss][Hh][Ii][Ff][Tt]|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|[Aa][Ll][Tt]|[Tt][Aa][Bb]|탭|좌클릭|우클릭|LMB|RMB|스페이스\\s?바?|[Ss][Pp][Aa][Cc][Ee]|퀵\\s?슬롯|ESC|[Ee]sc|F(?:1[0-2]|[1-9])|[A-Z])';
+const RE_COMBO      = new RegExp(ATOM_SRC + '(?:\\s*\\+\\s*' + ATOM_SRC + ')+', 'g');
+const RE_UI_BRACKET = /(?:[가-힣]{1,10}\s)?[가-힣]{1,10}\(\s*(?:ESC|F(?:1[0-2]|[1-9])|[A-Z])\s*\)/g;
+const RE_KEY_KO     = /[A-Z]\s?키/g;                              // "C 키", "F키"
+const RE_SINGLE     = /좌클릭|우클릭|스페이스\s?바?|[Ss][Hh][Ii][Ff][Tt]|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|[Aa][Ll][Tt]\b|[Tt][Aa][Bb]\b|탭|퀵\s?슬롯|ESC\b|F(?:1[0-2]|[1-9])\b/g;
+const RE_OR_LETTER  = /[A-Z](?=\s*(?:또는|혹은)\s)|(?:또는|혹은)\s*[A-Z](?![A-Za-z0-9])/g;
+
+function collect(re, text, type) {
+  const out = [];
+  re.lastIndex = 0;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    out.push({ start: m.index, end: m.index + m[0].length, text: m[0], type });
+    if (m.index === re.lastIndex) re.lastIndex++;
+  }
+  return out;
+}
+function boundaryOk(text, s, e) {
+  const before = s > 0 ? text[s - 1] : '';
+  const after  = e < text.length ? text[e] : '';
+  return !/[A-Za-z0-9]/.test(before) && !/[A-Za-z0-9]/.test(after);
+}
+function checkHold(line, end) {
+  return /^[^가-힣A-Za-z]{0,3}(?:입력\s?(?:을|를)?\s?)?유지|^\s?(?:을|를)?\s?꾹\s?누/.test(line.slice(end, end + 16));
+}
+
+// ── 한 줄 분석: 우선순위대로 겹치지 않게 매치 수집 ────────────────
+function analyzeLine(line) {
+  if (line.includes('[패드 모드]') || line.includes('[패드모드]')) return { padMode: true, matches: [] };
+
+  const cands = [];
+  // 1순위: UI 괄호 단축키 → 그대로 유지 (앞 단어가 조사로 끝나면 메뉴 이름에서 제외)
+  collect(RE_UI_BRACKET, line, 'ui').forEach(c => {
+    const sp = c.text.indexOf(' ');
+    const w = sp > 0 ? c.text.slice(0, sp) : '';
+    if (w && (/(?:[은는을를이가]|에서?|으?로)$/.test(w) || /^[간시후전중및]$/.test(w))) {
+      c.start += sp + 1;
+      c.text = c.text.slice(sp + 1);
+    }
+    c.prio = 1;
+    cands.push(c);
+  });
+  // 2순위: 조합키 (Shift + 우클릭 등)
+  collect(RE_COMBO, line, 'combo').forEach(c => {
+    if (!boundaryOk(line, c.start, c.end)) return;
+    c.prio = 2;
+    c.atoms = c.text.split('+').map(t => normAtom(t));
+    cands.push(c);
+  });
+  // 3순위: "X키" 형태
+  collect(RE_KEY_KO, line, 'keyko').forEach(c => {
+    if (/[A-Za-z0-9]/.test(c.start > 0 ? line[c.start - 1] : '')) return;
+    c.prio = 3;
+    c.atoms = [normAtom(c.text.replace(/\s?키$/, ''))];
+    cands.push(c);
+  });
+  // 4순위: 단독 키워드 (좌클릭, 시프트, Ctrl 등)
+  collect(RE_SINGLE, line, 'single').forEach(c => {
+    if (!boundaryOk(line, c.start, c.end)) return;
+    c.prio = 4;
+    c.atoms = [normAtom(c.text)];
+    cands.push(c);
+  });
+  // 5순위: "Q 또는 우클릭" 같은 알파벳 단독 키
+  collect(RE_OR_LETTER, line, 'orletter').forEach(c => {
+    const letter = c.text.match(/[A-Z]/)[0];
+    const pos = c.start + c.text.indexOf(letter);
+    if (!boundaryOk(line, pos, pos + 1)) return;
+    c.start = pos; c.end = pos + 1; c.text = letter;
+    c.prio = 5;
+    c.atoms = [letter];
+    cands.push(c);
+  });
+
+  // 우선순위 → 길이순으로 겹침 제거
+  cands.sort((a, b) => a.prio - b.prio || (b.end - b.start) - (a.end - a.start));
+  const chosen = [];
+  for (const c of cands) {
+    if (chosen.some(x => c.start < x.end && x.start < c.end)) continue;
+    chosen.push(c);
+  }
+  chosen.sort((a, b) => a.start - b.start);
+
+  // 매치별 분류 및 제안 생성
+  for (const c of chosen) {
+    if (c.type === 'ui') {
+      c.cls = 'ui';
+      // 괄호 키 제거 제안 (예: 월드맵(M) → 월드맵), 자동 이동(T)은 L3/LS로
+      const m2 = c.text.match(/^(.*)\(\s*(ESC|F(?:1[0-2]|[1-9])|[A-Z])\s*\)$/);
+      if (m2) {
+        const name = m2[1].trim();
+        c.rep = (m2[2] === 'T' && /자동\s?이동$/.test(name)) ? name + '(L3/LS)' : name;
+      }
+      continue;
+    }
+    const atoms = c.atoms || [];
+    const special = SPECIAL_COMBOS[atoms.join('+')];
+    const allMapped = atoms.length > 0 && atoms.every(a => ATOMS[a]);
+    if (special) {
+      c.cls = 'mapped';
+      c.pcLabel = c.text;
+      c.rep = special;
+    } else if (allMapped) {
+      c.cls = 'mapped';
+      c.hold = checkHold(line, c.end);
+      c.pcLabel = atoms.map(atomLabel).join(' + ') + (c.hold ? ' 유지' : '');
+      c.ps = atoms.map(a => ATOMS[a].ps).join(' + ') + (c.hold ? ' 유지' : '');
+      c.xb = atoms.map(a => ATOMS[a].xb).join(' + ') + (c.hold ? ' 유지' : '');
+    } else if (atoms.some(a => KNOWN_UNMAPPED.test(a))) {
+      c.cls = 'unmapped';
+      // 조합 중 매핑되는 부분은 참고로 표기 (예: CTRL+F)
+      if (atoms.length > 1) {
+        c.partial = atoms.map(a => ATOMS[a] ? ATOMS[a].ps + '/' + ATOMS[a].xb : a + '=?').join(' + ');
+      }
+    } else {
+      // 매핑표에 없는 알파벳 단독 키 (B키, I키 등) → UI 단축키로 간주
+      c.cls = 'ui';
+    }
+  }
+  return { padMode: false, matches: chosen };
+}
+
+// ── 렌더링 ───────────────────────────────────────────────────────
+function esc(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+let lastResult = [];
+
+function analyze() {
+  const lines = document.getElementById('input').value.split('\n');
+  lastResult = lines.map((line, i) => ({ no: i + 1, line, ...analyzeLine(line) }));
+  render();
+}
+
+function render() {
+  const box = document.getElementById('results');
+  const statsEl = document.getElementById('stats');
+  const onlyHits = document.getElementById('onlyHits').checked;
+  if (!lastResult.length) {
+    box.innerHTML = '<div class="empty">왼쪽에 텍스트를 붙여넣고 [키 분석하기]를 누르세요.</div>';
+    statsEl.classList.remove('show');
+    return;
+  }
+  let nMapped = 0, nUi = 0, nUnmapped = 0, nPad = 0;
+  const cards = [];
+  for (const r of lastResult) {
+    if (r.padMode) { nPad++; }
+    r.matches.forEach(m => { if (m.cls === 'mapped') nMapped++; else if (m.cls === 'ui') nUi++; else nUnmapped++; });
+    const hasContent = r.padMode || r.matches.length > 0;
+    if (onlyHits && !hasContent) continue;
+    if (!r.line.trim() && !hasContent) continue;
+
+    // 원문 하이라이트
+    let html = '', pos = 0;
+    for (const m of r.matches) {
+      html += esc(r.line.slice(pos, m.start));
+      html += '<mark class="' + m.cls + '">' + esc(r.line.slice(m.start, m.end)) + '</mark>';
+      pos = m.end;
+    }
+    html += esc(r.line.slice(pos));
+    if (r.padMode) html = '<span class="pad-badge">[패드 모드] 표기 — 삭제</span>' + html;
+
+    // 제안 목록
+    let sugs = '';
+    for (const m of r.matches) {
+      if (m.cls === 'mapped') {
+        sugs += '<li class="sug mapped"><span class="tag">변환</span><span class="pc">' + esc(m.pcLabel) + '</span>' +
+                (m.rep ? ' <span class="dim">→</span> <span class="xb">' + esc(m.rep) + '</span>'
+                       : ' <span class="dim">→</span> PS <span class="ps">' + esc(m.ps) +
+                         '</span> <span class="dim">·</span> XB <span class="xb">' + esc(m.xb) + '</span>') + '</li>';
+      } else if (m.cls === 'ui') {
+        sugs += '<li class="sug ui"><span class="tag">UI</span><span class="pc">' + esc(m.text) + '</span>' +
+                (m.rep ? ' <span class="dim">→</span> <span class="ps">' + esc(m.rep) + '</span>'
+                       : ' <span class="dim">— UI 단축키, 그대로 유지</span>') + '</li>';
+      } else {
+        sugs += '<li class="sug unmapped"><span class="tag">확인 필요</span><span class="pc">' + esc(m.text) +
+                '</span> <span class="dim">— 매핑표에 없음' + (m.partial ? ' (부분 참고: ' + esc(m.partial) + ')' : '') + '</span></li>';
+      }
+    }
+    cards.push('<div class="line-card"><div class="line-no">' + r.no + '행</div>' +
+               '<div class="line-text">' + html + '</div>' +
+               (sugs ? '<ul class="sugs">' + sugs + '</ul>' : '') + '</div>');
+  }
+  box.innerHTML = cards.length ? cards.join('') : '<div class="empty">키 관련 문장을 찾지 못했습니다.</div>';
+  statsEl.innerHTML = '총 <b>' + lastResult.length + '</b>행 분석 — ' +
+    '<span style="color:#6dbf7e">변환 대상 <b>' + nMapped + '</b>건</span> · ' +
+    '<span style="color:#7ab8f5">UI 단축키 <b>' + nUi + '</b>건</span> · ' +
+    '<span style="color:#e0a95c">미매핑(확인 필요) <b>' + nUnmapped + '</b>건</span> · ' +
+    '<span style="color:#999">패드 모드 <b>' + nPad + '</b>행</span>';
+  statsEl.classList.add('show');
+}
+
+// ── 결과 복사 (텍스트 리포트) ────────────────────────────────────
+function copyReport() {
+  const out = [];
+  for (const r of lastResult) {
+    if (!r.matches.length && !r.padMode) continue;
+    out.push('[' + r.no + '행] ' + (r.padMode ? '([패드 모드] 표기 삭제) ' : '') + r.line.trim());
+    for (const m of r.matches) {
+      if (m.cls === 'mapped')       out.push(m.rep ? '  - 변환: ' + m.pcLabel + ' → ' + m.rep
+                                                   : '  - 변환: ' + m.pcLabel + ' → PS: ' + m.ps + ' / XB: ' + m.xb);
+      else if (m.cls === 'ui')      out.push(m.rep ? '  - UI 단축키: ' + m.text + ' → ' + m.rep
+                                                   : '  - UI 유지: ' + m.text);
+      else                          out.push('  - 확인 필요(미매핑): ' + m.text + (m.partial ? ' (부분 참고: ' + m.partial + ')' : ''));
+    }
+  }
+  if (!out.length) return;
+  navigator.clipboard.writeText(out.join('\n')).then(() => {
+    const msg = document.getElementById('copyMsg');
+    msg.classList.add('show');
+    setTimeout(() => msg.classList.remove('show'), 1500);
+  });
+}
+
+function clearAll() {
+  document.getElementById('input').value = '';
+  lastResult = [];
+  render();
+}
+
+function loadSample() {
+  document.getElementById('input').value = [
+    '기술 사용 이후 좌클릭 유지 시 강 : 파훼 기술로 연계되도록 추가되었습니다.',
+    '또한, 우클릭만 입력해도 발동하지 않도록 변경되었습니다. 항상 좌클릭 + 우클릭 또는 Shift + 우클릭 입력 시에만 발동됩니다.',
+    '[우사] 호화선 상태에서 범나비 기술 사용 후 W + Shift 입력 시 연 : 신선걸음이 먼저 발동되던 현상이 수정되었습니다.',
+    '[세이지] 비전투 상태에서 주무기 전환 중 C 키 입력으로 각성 무기로 전환 시, 각성 무기 전환 동작을 하였음에도 마지막에 다시 주무기 상태가 되던 현상이 수정되었습니다.',
+    '기술 사용 시 시프트 + Q 입력을 유지하지 않아도 기술 발동이 유지되도록 변경되었습니다.',
+    '기술의 발동 조작키가 Q 또는 우클릭에서 Q 또는 좌클릭으로 변경되었습니다.',
+    '의뢰창이 열린 상태에서도 CTRL+F 키를 누르면 내 아이템 찾기 UI가 나오도록 수정되었습니다.',
+    '점령전의 경우 강제 공격(Alt+C) 활성화 시, 아군 공성 측의 함정도 파괴가 가능합니다.',
+    '기술창(K)에서 기술 프리셋 변경 시 기술 특화가 변경되지 않은 것처럼 보이던 현상이 수정되었습니다.',
+    '획득하지 못한 아이템은 편지함(B)으로 지급되었습니다.',
+    '토템의 성장은 메뉴(ESC) - 생활(F6)의 \'토템\' 메뉴를 통해 진행하실 수 있습니다.',
+    '[패드 모드] 창고에서 거래용 창고를 여는 단축키가 Y에서 RT+X로 변경되었습니다.',
+  ].join('\n');
+  analyze();
+}
+</script>
+</body>
+</html>
