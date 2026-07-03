@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BDC 콘솔 키 변환기</title>
+<title>BDC 콘솔 키 변환기 (Console Key Converter)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -65,15 +65,14 @@
   }
   .line-no { font-size: 11px; color: #555; margin-bottom: 5px; }
   .line-text { font-size: 13px; line-height: 1.8; color: #ddd; word-break: break-all; }
-  mark { border-radius: 4px; padding: 1px 4px; font-weight: 600; cursor: help; }
-  .sug[title] { cursor: help; }
+  mark { border-radius: 4px; padding: 1px 4px; font-weight: 600; }
   mark.mapped   { background: #1d3325; color: #6dbf7e; }
   mark.ui       { background: #16283f; color: #7ab8f5; }
   mark.unmapped { background: #3a2a12; color: #e0a95c; }
   .sugs { list-style: none; margin-top: 9px; border-top: 0.5px dashed #2a2a2a; padding-top: 9px;
           display: flex; flex-direction: column; gap: 4px; }
   .sug { font-size: 12.5px; line-height: 1.7; }
-  .sug .tag { display: inline-block; width: 62px; font-size: 11px; font-weight: 600; }
+  .sug .tag { display: inline-block; min-width: 90px; font-size: 11px; font-weight: 600; }
   .sug.mapped .tag   { color: #6dbf7e; }
   .sug.ui .tag       { color: #7ab8f5; }
   .sug.unmapped .tag { color: #e0a95c; }
@@ -97,48 +96,48 @@
 <body>
 
 <div class="header">
-  <h1>콘솔 키 변환기 <span class="badge">검은사막 콘솔 (PC키 → PS/XB)</span></h1>
+  <h1>콘솔 키 변환기 <span class="badge">검은사막 콘솔 (PC키 → PS/XB) · Black Desert Console Key Converter</span></h1>
   <p>한국어 원문을 넣으면 PC 조작키를 찾아 콘솔 키가 무엇인지 알려주고 표시합니다.<br>
-  <span style="color:#667">Hover over a highlighted key or suggestion to see it in English.</span></p>
+  <span style="color:#667">Paste Korean patch notes below and click Analyze to see the matching PS/Xbox button for each PC key.</span></p>
   <div class="legend">
-    <span class="chip mapped">변환 대상 — 콘솔 버튼 제안</span>
-    <span class="chip ui">UI 단축키 — 괄호 키 제거</span>
-    <span class="chip unmapped">미매핑 — 확인 필요</span>
-    <span class="chip pad">[패드 모드] — 표기 삭제</span>
+    <span class="chip mapped">변환 대상 — 콘솔 버튼 제안 · Convert to console button</span>
+    <span class="chip ui">UI 단축키 — 괄호 키 제거 · UI shortcut, drop the key</span>
+    <span class="chip unmapped">미매핑 — 확인 필요 · Unmapped, needs review</span>
+    <span class="chip pad">[패드 모드] — 표기 삭제 · Delete this tag</span>
   </div>
 </div>
 
 <div class="actions">
-  <button class="btn-primary" onclick="analyze()">키 분석하기</button>
-  <button onclick="loadSample()">샘플 넣기</button>
-  <button onclick="clearAll()">지우기</button>
-  <button onclick="copyReport()">결과 복사</button>
-  <span class="copy-msg" id="copyMsg">복사되었습니다!</span>
-  <label class="opt"><input type="checkbox" id="onlyHits" checked onchange="render()"> 키 관련 문장만 보기</label>
+  <button class="btn-primary" onclick="analyze()">키 분석하기 Analyze</button>
+  <button onclick="loadSample()">샘플 넣기 Sample</button>
+  <button onclick="clearAll()">지우기 Clear</button>
+  <button onclick="copyReport()">결과 복사 Copy</button>
+  <span class="copy-msg" id="copyMsg">복사되었습니다! Copied!</span>
+  <label class="opt"><input type="checkbox" id="onlyHits" checked onchange="render()"> 키 관련 문장만 보기 · Key lines only</label>
 </div>
 
 <div class="stats" id="stats"></div>
 
 <div class="panels">
   <div>
-    <div class="panel-label">입력 — 패치노트 원문 (한국어)</div>
-    <textarea id="input" placeholder="패치노트 텍스트를 붙여넣으세요. (엑셀 B열 복사 가능)"></textarea>
+    <div class="panel-label">입력 — 패치노트 원문 (한국어) · Input</div>
+    <textarea id="input" placeholder="패치노트 텍스트를 붙여넣으세요. (엑셀 B열 복사 가능) · Paste patch note text here."></textarea>
   </div>
   <div>
-    <div class="panel-label">분석 결과</div>
-    <div id="results"><div class="empty">왼쪽에 텍스트를 붙여넣고 [키 분석하기]를 누르세요.</div></div>
+    <div class="panel-label">분석 결과 · Results</div>
+    <div id="results"><div class="empty">왼쪽에 텍스트를 붙여넣고 [키 분석하기]를 누르세요.<br>Paste text on the left and click Analyze.</div></div>
   </div>
 </div>
 
 <details class="mapref">
-  <summary>기본 적인 키 매핑 참고표 펼치기</summary>
+  <summary>기본 적인 키 매핑 참고표 펼치기 · Key mapping reference table</summary>
   <table>
     <tr><th>PC</th><th>PS</th><th>XB</th><th>PC</th><th>PS</th><th>XB</th></tr>
     <tr><td>Shift</td><td>L2</td><td>LT</td><td>F</td><td>○</td><td>B</td></tr>
     <tr><td>좌클릭(LMB)</td><td>R1</td><td>RB</td><td>E</td><td>□</td><td>X</td></tr>
     <tr><td>우클릭(RMB)</td><td>R2</td><td>RT</td><td>Q</td><td>L1</td><td>LB</td></tr>
     <tr><td>W / A / S / D</td><td colspan="2">LS↑ / LS← / LS↓ / LS→</td><td>C</td><td>△</td><td>Y</td></tr>
-    <tr><td>Space</td><td>X</td><td>A</td><td>퀵슬롯</td><td>RING</td><td>MENU</td></tr>
+    <tr><td>Space</td><td>X</td><td>A</td><td>퀵슬롯(Quick Slot)</td><td>RING</td><td>MENU</td></tr>
     <tr><td>유지(HOLD)</td><td>유지</td><td>유지</td><td>CTRL+F</td><td colspan="2">아이템 찾기</td></tr>
   </table>
 </details>
@@ -147,8 +146,8 @@
 // ── 원자 키 매핑 (콘솔 키 정리.xlsx) ──────────────────────────────
 const ATOMS = {
   SHIFT:     { ps: 'L2',   xb: 'LT',   label: 'Shift' },
-  LMB:       { ps: 'R1',   xb: 'RB',   label: '좌클릭', en: 'LMB' },
-  RMB:       { ps: 'R2',   xb: 'RT',   label: '우클릭', en: 'RMB' },
+  LMB:       { ps: 'R1',   xb: 'RB',   label: '좌클릭' },
+  RMB:       { ps: 'R2',   xb: 'RT',   label: '우클릭' },
   W:         { ps: 'LS↑',  xb: 'LS↑',  label: 'W' },
   A:         { ps: 'LS←',  xb: 'LS←',  label: 'A' },
   S:         { ps: 'LS↓',  xb: 'LS↓',  label: 'S' },
@@ -158,20 +157,12 @@ const ATOMS = {
   Q:         { ps: 'L1',   xb: 'LB',   label: 'Q' },
   C:         { ps: '△',    xb: 'Y',    label: 'C' },
   SPACE:     { ps: 'X',    xb: 'A',    label: 'Space' },
-  QUICKSLOT: { ps: 'RING', xb: 'MENU', label: '퀵슬롯', en: 'Quick Slot' },
+  QUICKSLOT: { ps: 'RING', xb: 'MENU', label: '퀵슬롯' },
 };
 // 매핑표에 없는 것으로 확인된 키 (미매핑 경고 대상)
 const KNOWN_UNMAPPED = /^(CTRL|ALT|TAB|ESC|ENTER|F(?:1[0-2]|[1-9]))$/;
 // 특수 조합: 콘솔에서는 버튼이 아닌 기능명으로 치환
-const SPECIAL_COMBOS = { 'CTRL+F': { rep: '아이템 찾기', en: 'Find My Item' } };
-// UI 메뉴 영어 명칭 (마우스 오버 툴팁용)
-const UI_EN = {
-  '월드맵': 'World Map', '가방': 'Inventory', '내 정보': 'My Information',
-  '기술창': 'Skill Window', '편지함': 'Mailbox', '흑정령의 선물함': "Black Spirit's Gift Box",
-  '선물함': 'Gift Box', '의뢰': 'Quests', '가공': 'Processing', '도전과제': 'Challenges',
-  '길드': 'Guild', '자동 이동': 'Auto-Move', '자동이동': 'Auto-Move', '메뉴': 'Menu',
-  '펄 상점': 'Pearl Shop', '생활': 'Life Skill', '창고': 'Storage',
-};
+const SPECIAL_COMBOS = { 'CTRL+F': '아이템 찾기' };
 
 function normAtom(raw) {
   const u = raw.toUpperCase().replace(/\s+/g, '');
@@ -281,11 +272,6 @@ function analyzeLine(line) {
         const name = m2[1].trim();
         const auto = m2[2] === 'T' && /자동\s?이동$/.test(name);
         c.rep = auto ? name + '(L3/LS)' : name;
-        const en = UI_EN[name];
-        c.en = en ? 'EN: ' + en + '(' + m2[2] + ') → ' + (auto ? en + '(L3/LS)' : en)
-                  : 'EN: UI shortcut — remove the key in parentheses';
-      } else {
-        c.en = 'EN: UI shortcut key';
       }
       continue;
     }
@@ -295,21 +281,15 @@ function analyzeLine(line) {
     if (special) {
       c.cls = 'mapped';
       c.pcLabel = c.text;
-      c.rep = special.rep;
-      c.en = 'EN: ' + c.text + ' → ' + special.en;
+      c.rep = special;
     } else if (allMapped) {
       c.cls = 'mapped';
       c.hold = checkHold(line, c.end);
       c.pcLabel = atoms.map(atomLabel).join(' + ') + (c.hold ? ' 유지' : '');
       c.ps = atoms.map(a => ATOMS[a].ps).join(' + ') + (c.hold ? ' 유지' : '');
       c.xb = atoms.map(a => ATOMS[a].xb).join(' + ') + (c.hold ? ' 유지' : '');
-      const enHold = c.hold ? ' (Hold)' : '';
-      c.en = 'EN: ' + atoms.map(a => ATOMS[a].en || ATOMS[a].label).join(' + ') + enHold +
-             ' → PS: ' + atoms.map(a => ATOMS[a].ps).join(' + ') + enHold +
-             ' · XB: ' + atoms.map(a => ATOMS[a].xb).join(' + ') + enHold;
     } else if (atoms.some(a => KNOWN_UNMAPPED.test(a))) {
       c.cls = 'unmapped';
-      c.en = 'EN: Not mapped — needs review';
       // 조합 중 매핑되는 부분은 참고로 표기 (예: CTRL+F)
       if (atoms.length > 1) {
         c.partial = atoms.map(a => ATOMS[a] ? ATOMS[a].ps + '/' + ATOMS[a].xb : a + '=?').join(' + ');
@@ -317,7 +297,6 @@ function analyzeLine(line) {
     } else {
       // 매핑표에 없는 알파벳 단독 키 (B키, I키 등) → UI 단축키로 간주
       c.cls = 'ui';
-      c.en = 'EN: UI shortcut key — keep as is';
     }
   }
   return { padMode: false, matches: chosen };
@@ -325,7 +304,7 @@ function analyzeLine(line) {
 
 // ── 렌더링 ───────────────────────────────────────────────────────
 function esc(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 let lastResult = [];
 
@@ -340,7 +319,7 @@ function render() {
   const statsEl = document.getElementById('stats');
   const onlyHits = document.getElementById('onlyHits').checked;
   if (!lastResult.length) {
-    box.innerHTML = '<div class="empty">왼쪽에 텍스트를 붙여넣고 [키 분석하기]를 누르세요.</div>';
+    box.innerHTML = '<div class="empty">왼쪽에 텍스트를 붙여넣고 [키 분석하기]를 누르세요.<br>Paste text on the left and click Analyze.</div>';
     statsEl.classList.remove('show');
     return;
   }
@@ -357,40 +336,39 @@ function render() {
     let html = '', pos = 0;
     for (const m of r.matches) {
       html += esc(r.line.slice(pos, m.start));
-      html += '<mark class="' + m.cls + '"' + (m.en ? ' title="' + esc(m.en) + '"' : '') + '>' +
-              esc(r.line.slice(m.start, m.end)) + '</mark>';
+      html += '<mark class="' + m.cls + '">' + esc(r.line.slice(m.start, m.end)) + '</mark>';
       pos = m.end;
     }
     html += esc(r.line.slice(pos));
-    if (r.padMode) html = '<span class="pad-badge" title="EN: Delete the [Pad Mode] tag">[패드 모드] 표기 — 삭제</span>' + html;
+    if (r.padMode) html = '<span class="pad-badge">[패드 모드] 표기 — 삭제 (Delete tag)</span>' + html;
 
     // 제안 목록
     let sugs = '';
     for (const m of r.matches) {
       if (m.cls === 'mapped') {
-        sugs += '<li class="sug mapped" title="' + esc(m.en || '') + '"><span class="tag">변환</span><span class="pc">' + esc(m.pcLabel) + '</span>' +
+        sugs += '<li class="sug mapped"><span class="tag">변환 Convert</span><span class="pc">' + esc(m.pcLabel) + '</span>' +
                 (m.rep ? ' <span class="dim">→</span> <span class="xb">' + esc(m.rep) + '</span>'
                        : ' <span class="dim">→</span> PS <span class="ps">' + esc(m.ps) +
                          '</span> <span class="dim">·</span> XB <span class="xb">' + esc(m.xb) + '</span>') + '</li>';
       } else if (m.cls === 'ui') {
-        sugs += '<li class="sug ui" title="' + esc(m.en || '') + '"><span class="tag">UI</span><span class="pc">' + esc(m.text) + '</span>' +
+        sugs += '<li class="sug ui"><span class="tag">UI Keep</span><span class="pc">' + esc(m.text) + '</span>' +
                 (m.rep ? ' <span class="dim">→</span> <span class="ps">' + esc(m.rep) + '</span>'
-                       : ' <span class="dim">— UI 단축키, 그대로 유지</span>') + '</li>';
+                       : ' <span class="dim">— UI 단축키, 그대로 유지 (keep as-is)</span>') + '</li>';
       } else {
-        sugs += '<li class="sug unmapped" title="' + esc(m.en || '') + '"><span class="tag">확인 필요</span><span class="pc">' + esc(m.text) +
-                '</span> <span class="dim">— 매핑표에 없음' + (m.partial ? ' (부분 참고: ' + esc(m.partial) + ')' : '') + '</span></li>';
+        sugs += '<li class="sug unmapped"><span class="tag">확인 필요 Review</span><span class="pc">' + esc(m.text) +
+                '</span> <span class="dim">— 매핑표에 없음 (not mapped)' + (m.partial ? ' (부분 참고: ' + esc(m.partial) + ')' : '') + '</span></li>';
       }
     }
-    cards.push('<div class="line-card"><div class="line-no">' + r.no + '행</div>' +
+    cards.push('<div class="line-card"><div class="line-no">Line ' + r.no + '</div>' +
                '<div class="line-text">' + html + '</div>' +
                (sugs ? '<ul class="sugs">' + sugs + '</ul>' : '') + '</div>');
   }
-  box.innerHTML = cards.length ? cards.join('') : '<div class="empty">키 관련 문장을 찾지 못했습니다.</div>';
-  statsEl.innerHTML = '총 <b>' + lastResult.length + '</b>행 분석 — ' +
-    '<span style="color:#6dbf7e">변환 대상 <b>' + nMapped + '</b>건</span> · ' +
-    '<span style="color:#7ab8f5">UI 단축키 <b>' + nUi + '</b>건</span> · ' +
-    '<span style="color:#e0a95c">미매핑(확인 필요) <b>' + nUnmapped + '</b>건</span> · ' +
-    '<span style="color:#999">패드 모드 <b>' + nPad + '</b>행</span>';
+  box.innerHTML = cards.length ? cards.join('') : '<div class="empty">키 관련 문장을 찾지 못했습니다.<br>No key-related lines found.</div>';
+  statsEl.innerHTML = '총 <b>' + lastResult.length + '</b>행 분석 (Analyzed) — ' +
+    '<span style="color:#6dbf7e">변환 대상 <b>' + nMapped + '</b>건 (Convert)</span> · ' +
+    '<span style="color:#7ab8f5">UI 단축키 <b>' + nUi + '</b>건 (UI)</span> · ' +
+    '<span style="color:#e0a95c">미매핑(확인 필요) <b>' + nUnmapped + '</b>건 (Unmapped)</span> · ' +
+    '<span style="color:#999">패드 모드 <b>' + nPad + '</b>행 (Pad)</span>';
   statsEl.classList.add('show');
 }
 
