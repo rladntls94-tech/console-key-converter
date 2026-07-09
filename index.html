@@ -179,11 +179,13 @@ function normAtom(raw) {
 function atomLabel(a) { return ATOMS[a] ? ATOMS[a].label : a; }
 
 // ── 감지 정규식 ──────────────────────────────────────────────────
-const ATOM_SRC = '(?:[Ss][Hh][Ii][Ff][Tt]|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|[Aa][Ll][Tt]|[Tt][Aa][Bb]|탭|좌클릭|우클릭|[Ll]eft[\\s-]?[Cc]lick(?:ing)?|[Rr]ight[\\s-]?[Cc]lick(?:ing)?|LMB|RMB|스페이스\\s?바?|[Ss][Pp][Aa][Cc][Ee](?:\\s?[Bb][Aa][Rr])?|퀵\\s?슬롯|[Qq]uick\\s?[Ss]lot|ESC|[Ee]sc|F(?:1[0-2]|[1-9])|[A-Z])';
+const ATOM_SRC = '(?:[Ss][Hh][Ii][Ff][Tt]|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|[Aa][Ll][Tt]|[Tt][Aa][Bb]|탭|좌클릭|우클릭|[Ll]eft[\\s-]?[Cc]lick(?:ing)?|[Rr]ight[\\s-]?[Cc]lick(?:ing)?|LMB|RMB|스페이스\\s?바?|[Ss][Pp][Aa][Cc][Ee](?:\\s?[Bb][Aa][Rr])?|퀵\\s?슬롯|[Qq]uick\\s?[Ss]lot|ESC|[Ee]sc|F(?:1[0-2]|[1-9])|[A-Z]|[/\\\\;,.\'\\[\\]=~`])';
 const RE_COMBO      = new RegExp(ATOM_SRC + '(?:\\s*\\+\\s*' + ATOM_SRC + ')+', 'g');
-const RE_UI_BRACKET = /(?:(?:[가-힣]{1,12}|[A-Za-z]{2,14})\s)?(?:[가-힣]{1,12}|[A-Za-z]{2,14})\s?\(\s*(?:ESC|F(?:1[0-2]|[1-9])|[A-Z])\s*\)/g;
-const RE_KEY_KO     = /[A-Z]\s?키/g;                              // "C 키", "F키"
-const RE_KEY_EN     = /[A-Z]\s?[Kk]ey\b/g;                        // "C key", "C Key"
+const RE_UI_BRACKET = /(?:(?:[가-힣]{1,12}|[A-Za-z]{2,14})\s)?(?:[가-힣]{1,12}|[A-Za-z]{2,14})\s?\(\s*(?:ESC|F(?:1[0-2]|[1-9])|[A-Z]|[\/\\;,.'\[\]=~`-])\s*\)/g;
+// 괄호 키 표기 단독형: "(/)", "(M)", "(ESC)" 처럼 앞 단어 없이 나와도 감지
+const RE_UI_PAREN   = /\(\s*(?:ESC|F(?:1[0-2]|[1-9])|[A-Z]|[\/\\;,.'\[\]=~`-])\s*\)/g;
+const RE_KEY_KO     = /(?:[A-Z]|[\/\\;,.'\[\]=~`])\s?키/g;        // "C 키", "F키", "/ 키"
+const RE_KEY_EN     = /(?:[A-Z]|[\/\\;,.'\[\]=~`])\s?[Kk]ey\b/g;  // "C key", "/ key"
 // 영어 단독 키: Shift 등은 일반 단어와 겹치므로 대문자 표기만 인정
 const RE_SINGLE     = /좌클릭|우클릭|스페이스\s?바?|[Ll]eft[\s-]?[Cc]lick(?:ing)?|[Rr]ight[\s-]?[Cc]lick(?:ing)?|LMB\b|RMB\b|[Ss]pace\s?[Bb]ar\b|Shift|SHIFT|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|Alt\b|ALT\b|Tab\b|TAB\b|탭|퀵\s?슬롯|[Qq]uick\s?[Ss]lot|ESC\b|[Ee]sc|F(?:1[0-2]|[1-9])\b/g;
 const RE_OR_LETTER  = /[A-Z](?=\s*(?:또는|혹은)\s)|(?:또는|혹은)\s*[A-Z](?![A-Za-z0-9])/g;
@@ -221,17 +223,26 @@ function analyzeLine(line) {
   const cands = [];
   // 1순위: UI 괄호 단축키 → 그대로 유지 (앞 단어가 조사/영어 관사·전치사면 메뉴 이름에서 제외)
   collect(RE_UI_BRACKET, line, 'ui').forEach(c => {
-    const paren = c.text.indexOf('(');
-    const words = c.text.slice(0, paren).trim().split(/\s+/).filter(Boolean);
-    if (words.length > 1) {
-      const w = words[0];
-      if (/(?:[은는을를이가]|에서?|으?로)$/.test(w) || /^[간시후전중및]$/.test(w) ||
-          /^(?:the|a|an|in|on|at|to|of|from|via|your|per|and|or|use|using|open|press|pressing|when|while|with|new|each|any)$/i.test(w)) {
-        const cut = c.text.match(/^\S+\s+/)[0].length;
-        c.start += cut;
-        c.text = c.text.slice(cut);
-      }
+    const isStop = w => /(?:[은는을를이가]|에서?|으?로)$/.test(w) || /^[간시후전중및]$/.test(w) ||
+        /^(?:the|a|an|in|on|at|to|of|from|via|your|per|and|or|use|using|open|press|pressing|when|while|with|new|each|any)$/i.test(w);
+    const words = c.text.slice(0, c.text.indexOf('(')).trim().split(/\s+/).filter(Boolean);
+    while (words.length > 1 && isStop(words[0])) {
+      const cut = c.text.match(/^\S+\s+/)[0].length;
+      c.start += cut;
+      c.text = c.text.slice(cut);
+      words.shift();
     }
+    // 남은 단어도 영어 관사·전치사뿐이면 괄호 키만 남김 (예: "with the (/)" → "(/)")
+    if (words.length === 1 && /^[A-Za-z]+$/.test(words[0]) && isStop(words[0])) {
+      const cut = c.text.match(/^\S+\s*/)[0].length;
+      c.start += cut;
+      c.text = c.text.slice(cut);
+    }
+    c.prio = 1;
+    cands.push(c);
+  });
+  // 1순위(단독형): 앞 단어 없는 "(/)", "(M)" — 단어 붙은 매치가 있으면 겹침 제거에서 밀려남
+  collect(RE_UI_PAREN, line, 'ui').forEach(c => {
     c.prio = 1;
     cands.push(c);
   });
@@ -300,7 +311,7 @@ function analyzeLine(line) {
     if (c.type === 'ui') {
       c.cls = 'ui';
       // 괄호 키 제거 제안 (예: 월드맵(M) → 월드맵), 자동 이동(T)은 L3/LS로
-      const m2 = c.text.match(/^(.*)\(\s*(ESC|F(?:1[0-2]|[1-9])|[A-Z])\s*\)$/);
+      const m2 = c.text.match(/^(.*)\(\s*(ESC|F(?:1[0-2]|[1-9])|[A-Z]|[\/\\;,.'\[\]=~`-])\s*\)$/);
       if (m2) {
         const name = m2[1].trim();
         const auto = m2[2] === 'T' && /자동\s?이동$/.test(name);
@@ -451,6 +462,8 @@ function loadSample() {
     'Fixed an issue where pressing the C key while swapping weapons reverted to the main weapon.',
     'Unclaimed items will be sent to your Mailbox (B). Open the World Map (M) to check the location.',
     '[Pad Mode] The trade warehouse shortcut has been changed from Y to RT+X.',
+    '채팅 명령어(/) 입력 시 자동 완성 기능이 추가되었습니다.',
+    '(/) 입력으로 채팅창을 바로 열 수 있습니다.',
   ].join('\n');
   analyze();
 }
