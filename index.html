@@ -188,7 +188,8 @@ const RE_KEY_EN     = /[A-Z]\s?[Kk]ey\b/g;                        // "C key", "C
 const RE_SINGLE     = /좌클릭|우클릭|스페이스\s?바?|[Ll]eft[\s-]?[Cc]lick(?:ing)?|[Rr]ight[\s-]?[Cc]lick(?:ing)?|LMB\b|RMB\b|[Ss]pace\s?[Bb]ar\b|Shift|SHIFT|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|Alt\b|ALT\b|Tab\b|TAB\b|탭|퀵\s?슬롯|[Qq]uick\s?[Ss]lot|ESC\b|[Ee]sc|F(?:1[0-2]|[1-9])\b/g;
 const RE_OR_LETTER  = /[A-Z](?=\s*(?:또는|혹은)\s)|(?:또는|혹은)\s*[A-Z](?![A-Za-z0-9])/g;
 // 영어 문맥 단독 키: "press E", "hold W", "Q or ...", "or Q", "press Space"
-const RE_LETTER_EN  = /(?<=(?:[Pp]ress(?:ing)?|[Hh]old(?:ing)?|[Tt]ap(?:ping)?|or)\s(?:the\s)?)(?:Space|[A-Z])(?![A-Za-z0-9])|[A-Z](?=\s+or\s+)/g;
+// (lookbehind 미지원 브라우저 호환을 위해 동사까지 매치 후 키 위치만 잘라 사용)
+const RE_LETTER_EN  = /\b(?:[Pp]ress(?:ing)?|[Hh]old(?:ing)?|[Tt]ap(?:ping)?|or)\s+(?:the\s+)?(?:Space|[A-Z])(?![A-Za-z0-9])|[A-Z](?=\s+or\s+)/g;
 
 function collect(re, text, type) {
   const out = [];
@@ -275,7 +276,11 @@ function analyzeLine(line) {
   });
   // 5순위(영어): "press E", "hold W", "Q or right-click" 같은 단독 키
   collect(RE_LETTER_EN, line, 'orletter').forEach(c => {
-    if (!boundaryOk(line, c.start, c.end)) return;
+    const km = c.text.match(/(?:Space|[A-Z])$/);
+    if (!km) return;
+    const pos = c.end - km[0].length;
+    if (!boundaryOk(line, pos, c.end)) return;
+    c.start = pos; c.text = km[0];
     c.prio = 5;
     c.atoms = [normAtom(c.text)];
     cands.push(c);
