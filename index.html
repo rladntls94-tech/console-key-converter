@@ -97,8 +97,8 @@
 
 <div class="header">
   <h1>콘솔 키 변환기 <span class="badge">검은사막 콘솔 (PC키 → PS/XB) · Black Desert Console Key Converter</span></h1>
-  <p>한국어 원문을 넣으면 PC 조작키를 찾아 콘솔 키가 무엇인지 알려주고 표시합니다.<br>
-  <span style="color:#667">Paste Korean patch notes below and click Analyze to see the matching PS/Xbox button for each PC key.</span></p>
+  <p>한국어·영어 등 어떤 원문을 넣어도 PC 조작키를 찾아 콘솔 키가 무엇인지 알려주고 표시합니다.<br>
+  <span style="color:#667">Paste Korean or English patch notes below and click Analyze to see the matching PS/Xbox button for each PC key.</span></p>
   <div class="legend">
     <span class="chip mapped">변환 대상 — 콘솔 버튼 제안 · Convert to console button</span>
     <span class="chip ui">UI 단축키 — 괄호 키 제거 · UI shortcut, drop the key</span>
@@ -120,7 +120,7 @@
 
 <div class="panels">
   <div>
-    <div class="panel-label">입력 — 패치노트 원문 (한국어) · Input</div>
+    <div class="panel-label">입력 — 패치노트 원문 (한국어·영어) · Input</div>
     <textarea id="input" placeholder="패치노트 텍스트를 붙여넣으세요. (엑셀 B열 복사 가능) · Paste patch note text here."></textarea>
   </div>
   <div>
@@ -165,12 +165,12 @@ const KNOWN_UNMAPPED = /^(CTRL|ALT|TAB|ESC|ENTER|F(?:1[0-2]|[1-9]))$/;
 const SPECIAL_COMBOS = { 'CTRL+F': '아이템 찾기' };
 
 function normAtom(raw) {
-  const u = raw.toUpperCase().replace(/\s+/g, '');
+  const u = raw.toUpperCase().replace(/[\s-]+/g, '');
   if (/^(SHIFT|시프트|쉬프트)$/.test(u)) return 'SHIFT';
-  if (u === '좌클릭' || u === 'LMB') return 'LMB';
-  if (u === '우클릭' || u === 'RMB') return 'RMB';
-  if (/^(스페이스바?|SPACE)$/.test(u)) return 'SPACE';
-  if (/^퀵슬롯$/.test(u)) return 'QUICKSLOT';
+  if (/^(좌클릭|LMB|LEFTCLICK(?:ING)?)$/.test(u)) return 'LMB';
+  if (/^(우클릭|RMB|RIGHTCLICK(?:ING)?)$/.test(u)) return 'RMB';
+  if (/^(스페이스바?|SPACE(?:BAR)?)$/.test(u)) return 'SPACE';
+  if (/^(퀵슬롯|QUICKSLOT)$/.test(u)) return 'QUICKSLOT';
   if (u === '컨트롤') return 'CTRL';
   if (u === '탭') return 'TAB';
   if (u === '엔터') return 'ENTER';
@@ -179,12 +179,16 @@ function normAtom(raw) {
 function atomLabel(a) { return ATOMS[a] ? ATOMS[a].label : a; }
 
 // ── 감지 정규식 ──────────────────────────────────────────────────
-const ATOM_SRC = '(?:[Ss][Hh][Ii][Ff][Tt]|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|[Aa][Ll][Tt]|[Tt][Aa][Bb]|탭|좌클릭|우클릭|LMB|RMB|스페이스\\s?바?|[Ss][Pp][Aa][Cc][Ee]|퀵\\s?슬롯|ESC|[Ee]sc|F(?:1[0-2]|[1-9])|[A-Z])';
+const ATOM_SRC = '(?:[Ss][Hh][Ii][Ff][Tt]|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|[Aa][Ll][Tt]|[Tt][Aa][Bb]|탭|좌클릭|우클릭|[Ll]eft[\\s-]?[Cc]lick(?:ing)?|[Rr]ight[\\s-]?[Cc]lick(?:ing)?|LMB|RMB|스페이스\\s?바?|[Ss][Pp][Aa][Cc][Ee](?:\\s?[Bb][Aa][Rr])?|퀵\\s?슬롯|[Qq]uick\\s?[Ss]lot|ESC|[Ee]sc|F(?:1[0-2]|[1-9])|[A-Z])';
 const RE_COMBO      = new RegExp(ATOM_SRC + '(?:\\s*\\+\\s*' + ATOM_SRC + ')+', 'g');
-const RE_UI_BRACKET = /(?:[가-힣]{1,10}\s)?[가-힣]{1,10}\(\s*(?:ESC|F(?:1[0-2]|[1-9])|[A-Z])\s*\)/g;
+const RE_UI_BRACKET = /(?:(?:[가-힣]{1,12}|[A-Za-z]{2,14})\s)?(?:[가-힣]{1,12}|[A-Za-z]{2,14})\s?\(\s*(?:ESC|F(?:1[0-2]|[1-9])|[A-Z])\s*\)/g;
 const RE_KEY_KO     = /[A-Z]\s?키/g;                              // "C 키", "F키"
-const RE_SINGLE     = /좌클릭|우클릭|스페이스\s?바?|[Ss][Hh][Ii][Ff][Tt]|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|[Aa][Ll][Tt]\b|[Tt][Aa][Bb]\b|탭|퀵\s?슬롯|ESC\b|F(?:1[0-2]|[1-9])\b/g;
+const RE_KEY_EN     = /[A-Z]\s?[Kk]ey\b/g;                        // "C key", "C Key"
+// 영어 단독 키: Shift 등은 일반 단어와 겹치므로 대문자 표기만 인정
+const RE_SINGLE     = /좌클릭|우클릭|스페이스\s?바?|[Ll]eft[\s-]?[Cc]lick(?:ing)?|[Rr]ight[\s-]?[Cc]lick(?:ing)?|LMB\b|RMB\b|[Ss]pace\s?[Bb]ar\b|Shift|SHIFT|시프트|쉬프트|[Cc][Tt][Rr][Ll]|컨트롤|Alt\b|ALT\b|Tab\b|TAB\b|탭|퀵\s?슬롯|[Qq]uick\s?[Ss]lot|ESC\b|[Ee]sc|F(?:1[0-2]|[1-9])\b/g;
 const RE_OR_LETTER  = /[A-Z](?=\s*(?:또는|혹은)\s)|(?:또는|혹은)\s*[A-Z](?![A-Za-z0-9])/g;
+// 영어 문맥 단독 키: "press E", "hold W", "Q or ...", "or Q", "press Space"
+const RE_LETTER_EN  = /(?<=(?:[Pp]ress(?:ing)?|[Hh]old(?:ing)?|[Tt]ap(?:ping)?|or)\s(?:the\s)?)(?:Space|[A-Z])(?![A-Za-z0-9])|[A-Z](?=\s+or\s+)/g;
 
 function collect(re, text, type) {
   const out = [];
@@ -201,22 +205,31 @@ function boundaryOk(text, s, e) {
   const after  = e < text.length ? text[e] : '';
   return !/[A-Za-z0-9]/.test(before) && !/[A-Za-z0-9]/.test(after);
 }
-function checkHold(line, end) {
-  return /^[^가-힣A-Za-z]{0,3}(?:입력\s?(?:을|를)?\s?)?유지|^\s?(?:을|를)?\s?꾹\s?누/.test(line.slice(end, end + 16));
+function checkHold(line, end, start) {
+  if (/^[^가-힣A-Za-z]{0,3}(?:입력\s?(?:을|를)?\s?)?유지|^\s?(?:을|를)?\s?꾹\s?누/.test(line.slice(end, end + 16))) return true;
+  // 영어: 매치 앞의 "hold / press and hold / while holding" 또는 뒤의 "(hold)" "held"
+  if (/(?:^|[\s(])[Hh]old(?:ing)?(?:\s+down)?\s+(?:the\s+)?$/.test(line.slice(Math.max(0, (start || 0) - 24), start || 0))) return true;
+  if (/^\s?\((?:[Hh]old|HOLD)\)|^\s+(?:is\s+)?held\b/.test(line.slice(end, end + 12))) return true;
+  return false;
 }
 
 // ── 한 줄 분석: 우선순위대로 겹치지 않게 매치 수집 ────────────────
 function analyzeLine(line) {
-  if (line.includes('[패드 모드]') || line.includes('[패드모드]')) return { padMode: true, matches: [] };
+  if (/\[(?:패드\s?모드|[Pp]ad\s?[Mm]ode|[Gg]ame\s?pad\s?[Mm]ode)\]/.test(line)) return { padMode: true, matches: [] };
 
   const cands = [];
-  // 1순위: UI 괄호 단축키 → 그대로 유지 (앞 단어가 조사로 끝나면 메뉴 이름에서 제외)
+  // 1순위: UI 괄호 단축키 → 그대로 유지 (앞 단어가 조사/영어 관사·전치사면 메뉴 이름에서 제외)
   collect(RE_UI_BRACKET, line, 'ui').forEach(c => {
-    const sp = c.text.indexOf(' ');
-    const w = sp > 0 ? c.text.slice(0, sp) : '';
-    if (w && (/(?:[은는을를이가]|에서?|으?로)$/.test(w) || /^[간시후전중및]$/.test(w))) {
-      c.start += sp + 1;
-      c.text = c.text.slice(sp + 1);
+    const paren = c.text.indexOf('(');
+    const words = c.text.slice(0, paren).trim().split(/\s+/).filter(Boolean);
+    if (words.length > 1) {
+      const w = words[0];
+      if (/(?:[은는을를이가]|에서?|으?로)$/.test(w) || /^[간시후전중및]$/.test(w) ||
+          /^(?:the|a|an|in|on|at|to|of|from|via|your|per|and|or|use|using|open|press|pressing|when|while|with|new|each|any)$/i.test(w)) {
+        const cut = c.text.match(/^\S+\s+/)[0].length;
+        c.start += cut;
+        c.text = c.text.slice(cut);
+      }
     }
     c.prio = 1;
     cands.push(c);
@@ -228,11 +241,19 @@ function analyzeLine(line) {
     c.atoms = c.text.split('+').map(t => normAtom(t));
     cands.push(c);
   });
-  // 3순위: "X키" 형태
+  // 3순위: "X키" / "X key" 형태
   collect(RE_KEY_KO, line, 'keyko').forEach(c => {
     if (/[A-Za-z0-9]/.test(c.start > 0 ? line[c.start - 1] : '')) return;
     c.prio = 3;
     c.atoms = [normAtom(c.text.replace(/\s?키$/, ''))];
+    cands.push(c);
+  });
+  collect(RE_KEY_EN, line, 'keyko').forEach(c => {
+    if (/[A-Za-z0-9]/.test(c.start > 0 ? line[c.start - 1] : '')) return;
+    // 문장 첫머리의 "A key ..." 같은 관사 오탐 제외
+    if (c.text[0] === 'A' && (c.start === 0 || /[.!?]\s*$/.test(line.slice(0, c.start)))) return;
+    c.prio = 3;
+    c.atoms = [c.text[0]];
     cands.push(c);
   });
   // 4순위: 단독 키워드 (좌클릭, 시프트, Ctrl 등)
@@ -250,6 +271,13 @@ function analyzeLine(line) {
     c.start = pos; c.end = pos + 1; c.text = letter;
     c.prio = 5;
     c.atoms = [letter];
+    cands.push(c);
+  });
+  // 5순위(영어): "press E", "hold W", "Q or right-click" 같은 단독 키
+  collect(RE_LETTER_EN, line, 'orletter').forEach(c => {
+    if (!boundaryOk(line, c.start, c.end)) return;
+    c.prio = 5;
+    c.atoms = [normAtom(c.text)];
     cands.push(c);
   });
 
@@ -284,7 +312,7 @@ function analyzeLine(line) {
       c.rep = special;
     } else if (allMapped) {
       c.cls = 'mapped';
-      c.hold = checkHold(line, c.end);
+      c.hold = checkHold(line, c.end, c.start);
       c.pcLabel = atoms.map(atomLabel).join(' + ') + (c.hold ? ' 유지' : '');
       c.ps = atoms.map(a => ATOMS[a].ps).join(' + ') + (c.hold ? ' 유지' : '');
       c.xb = atoms.map(a => ATOMS[a].xb).join(' + ') + (c.hold ? ' 유지' : '');
@@ -414,6 +442,10 @@ function loadSample() {
     '획득하지 못한 아이템은 편지함(B)으로 지급되었습니다.',
     '토템의 성장은 메뉴(ESC) - 생활(F6)의 \'토템\' 메뉴를 통해 진행하실 수 있습니다.',
     '[패드 모드] 창고에서 거래용 창고를 여는 단축키가 Y에서 RT+X로 변경되었습니다.',
+    'Press Q or Right-click to use the skill. Hold Shift + Left-click to charge it.',
+    'Fixed an issue where pressing the C key while swapping weapons reverted to the main weapon.',
+    'Unclaimed items will be sent to your Mailbox (B). Open the World Map (M) to check the location.',
+    '[Pad Mode] The trade warehouse shortcut has been changed from Y to RT+X.',
   ].join('\n');
   analyze();
 }
